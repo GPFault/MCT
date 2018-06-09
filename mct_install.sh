@@ -9,6 +9,7 @@ COIN_CLI='mct-cli'
 COIN_PATH='/usr/local/bin/'
 COIN_TGZ='https://mct.plus/wp-content/uploads/2018/05/mct-linux-cli-v18.0.1.tar.gz'
 COIN_ZIP=$(echo $COIN_TGZ | awk -F'/' '{print $NF}')
+SENTINEL_REPO='https://github.com/sparkscrypto/sentinel'
 COIN_NAME='MCT'
 COIN_PORT=9551
 RPC_PORT=9552
@@ -37,6 +38,18 @@ purgeOldInstallation() {
     #remove binaries and MCT utilities
     cd /usr/local/bin && sudo rm mct-cli mct-tx mctd > /dev/null 2>&1 && cd
     echo -e "${GREEN}* Done${NONE}";
+}
+
+function install_sentinel() {
+  echo -e "${GREEN}Installing sentinel.${NC}"
+  apt-get -y install python-virtualenv virtualenv >/dev/null 2>&1
+  git clone $SENTINEL_REPO $CONFIGFOLDER/sentinel >/dev/null 2>&1
+  cd $CONFIGFOLDER/sentinel
+  virtualenv ./venv >/dev/null 2>&1
+  ./venv/bin/pip install -r requirements.txt >/dev/null 2>&1
+  echo  "* * * * * cd $CONFIGFOLDER/sentinel && ./venv/bin/python bin/sentinel.py >> $CONFIGFOLDER/sentinel.log 2>&1" > $CONFIGFOLDER/$COIN_NAME.cron
+  crontab $CONFIGFOLDER/$COIN_NAME.cron
+  rm $CONFIGFOLDER/$COIN_NAME.cron >/dev/null 2>&1
 }
 
 
@@ -275,6 +288,7 @@ function setup_node() {
   create_config
   create_key
   update_config
+  install_sentinel
   enable_firewall
   important_information
   configure_systemd
